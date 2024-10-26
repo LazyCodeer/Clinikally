@@ -13,5 +13,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-  ]
+, "components/ProductCard.jsx", "app/search.jsx", "app/productDetail.jsx", "app/(tabs)/index.jsx", "constants/Colors.js", "constants/Typography.js"  ]
 }

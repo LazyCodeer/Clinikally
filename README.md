@@ -1,50 +1,193 @@
-# Welcome to your Expo app 👋
+# Project Structure and File Information
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This project is an Expo app created with `create-expo-app`. Below is a detailed description of the project structure and the purpose of each file and directory.
 
-## Get started
+---
 
-1. Install dependencies
+## Root Directory
 
+- **`.expo/`**: Contains Expo-specific configuration files.
+
+  - **`devices.json`**: Configuration for connected devices.
+  - **`README.md`**: Documentation for the `.expo` directory.
+  - **`types/`**: Type definitions for Expo.
+  - **`web/`**: Web-specific configurations for Expo.
+
+- **`.gitignore`**: Specifies files and directories to be ignored by Git.
+
+- **`.vscode/`**: Contains Visual Studio Code-specific settings.
+
+  - **`.react/`**: React-specific settings for VS Code.
+
+- **`app/`**: Main directory for the app's source code.
+
+  - **`_layout.tsx`**: Root layout component for the app.
+  - **`(tabs)/`**: Contains tab navigation components.
+  - **`+html.tsx`**: Configuration for the root HTML during static rendering.
+  - **`productDetail.jsx`**: Component for displaying product details.
+  - **`search.jsx`**: Component for the search screen.
+  - **`app.json`**: Configuration file for the Expo app.
+
+- **`assets/`**: Contains static assets like data, fonts, and images.
+
+  - **`data/`**: JSON files with data for the app.
+
+    - **`products.json`**: Contains product data used throughout the app, including details such as product ID, name, prices, description, image URL, stock status, and timestamps for creation and updates. Example entry:
+      ```json
+      {
+        "id": 4,
+        "name": "Product 1",
+        "originalPrice": 63.54,
+        "discountPrice": 56.56,
+        "description": "",
+        "image": "https://img.freepik.com/free-photo/skin-care-banner-concept-with-makeup_23-2149449137.jpg?t=st=1729957976~exp=1729961576~hmac=2a8f9348358dc70718cd6500d5b4848a7c5110eee1ef1870d80d8c7295850349&w=1380",
+        "inStock": true,
+        "created_at": "2024-10-26T13:53:57.884177Z",
+        "updated_at": "2024-10-26T13:53:57.884177Z"
+      }
+      ```
+    - **`pincodes.json`**: Contains pincode delivery data, with each entry providing:
+      - `pincode`: The pincode for the delivery location.
+      - `provider`: The logistics provider handling deliveries to this pincode.
+      - `tat`: The turnaround time (in days) estimated for delivery to the specified pincode.
+        Example entry:
+      ```json
+      {
+        "pincode": 100001,
+        "provider": "Provider A",
+        "tat": 5
+      }
+      ```
+
+  - **`fonts/`**: Custom fonts used in the app.
+  - **`images/`**: Images used in the app.
+
+- **`babel.config.js`**: Configuration file for Babel.
+
+- **`components/`**: Contains reusable UI components.
+
+  - **`tests/`**: Directory for component tests.
+  - **`Container.tsx`**: Container component for wrapping other components.
+  - **`navigation/`**: Navigation-related components.
+  - **`OfferCarousel.jsx`**: Component for displaying a carousel of offers.
+  - **`OfferCarouselItem.tsx`**: Component for individual items in the offer carousel.
+  - **`ProductCard.jsx`**: Component for displaying individual product cards.
+  - **`SearchBar.jsx`**: Component for the search bar.
+
+- **`constants/`**: Contains constant values used throughout the app.
+
+  - **`Colors.ts`**: Color constants.
+  - **`Typography.ts`**: Typography constants.
+
+- **`context/`**: Contains context providers for state management.
+
+  - **`CartContext.tsx`**: Context provider for managing the shopping cart state.
+
+- **`expo-env.d.ts`**: Type definitions for Expo environment variables.
+
+- **`package.json`**: Configuration file for npm, including scripts and dependencies.
+
+- **`README.md`**: Documentation for the project.
+
+- **`tsconfig.json`**: Configuration file for TypeScript.
+
+---
+
+## Detailed File Descriptions
+
+### `_layout.tsx`
+
+Defines the root layout for the app, setting up the navigation stack and including the `CartProvider` to manage cart state globally.
+
+### `index.jsx`
+
+Contains the `HomeScreen` component, displaying a list of products. Utilizes the `ProductCard` component to render individual products and includes a search bar.
+
+### `productDetail.jsx`
+
+Defines the `ProductDetailScreen` component, which displays detailed information about a selected product. Includes functionality for validating pincode and calculating delivery dates.
+
+### `search.jsx`
+
+Contains the `SearchScreen` component, allowing users to search for products. Filters products based on the search query and displays them using the `ProductCard` component.
+
+### `Container.tsx`
+
+Defines a `Container` component that wraps other components, providing consistent padding and styling.
+
+### `OfferCarousel.jsx`
+
+Contains the `OfferCarousel` component, displaying a carousel of offers using the `react-native-snap-carousel` library.
+
+### `OfferCarouselItem.tsx`
+
+Defines the `OfferCarouselItem` component, representing individual items in the offer carousel.
+
+### `ProductCard.jsx`
+
+Contains the `ProductCard` component, which displays individual product information, including an image, name, price, and an "Add to Cart" button.
+
+### `SearchBar.jsx`
+
+Contains the `SearchBar` component, providing a text input for searching products.
+
+### `Colors.ts`
+
+Defines color constants used throughout the app for consistent styling.
+
+### `Typography.ts`
+
+Defines typography constants used throughout the app for consistent text styling.
+
+### `CartContext.tsx`
+
+Defines the `CartContext` and `CartProvider`, managing the state of the shopping cart, including adding, updating, and removing items.
+
+### `products.json`
+
+Contains product data used throughout the app, with each product object holding fields for:
+
+- `id`: Unique identifier for the product.
+- `name`: Name of the product.
+- `originalPrice`: Original price before any discounts.
+- `discountPrice`: Price after applying discounts.
+- `description`: Brief description of the product.
+- `image`: Link to the product image.
+- `inStock`: Availability status (e.g., `true` or `false`).
+- `created_at`: Timestamp for product creation.
+- `updated_at`: Timestamp for the last update.
+
+### `offers.json`
+
+Contains offer data displayed in the offer carousel, with each offer object including:
+
+- `offerID`: Unique identifier for the offer.
+- `title`: Title of the offer.
+- `description`: Brief description of the offer.
+- `imageURL`: Link to the offer image.
+
+### `pincodes.json`
+
+Contains pincode delivery data, with each entry including:
+
+- `pincode`: The pincode for the delivery location.
+- `provider`: The logistics provider managing deliveries to this pincode.
+- `tat`: The turnaround time (in days) estimated for delivery to the specified pincode.
+
+---
+
+## Getting Started
+
+1. **Install dependencies**
    ```bash
    npm install
    ```
-
-2. Start the app
-
+2. **Start the app**
    ```bash
-    npx expo start
+   npm start
    ```
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+# Tools used
+1. **CSVJSON:** Used to convert CSV files to JSON format.
+2. **Freepik:** Used demo images from this resource.
+3. **Figma:** https://www.figma.com/design/76EEh5cwQkzPSDAxp6vQg4/Clinikally?node-id=0-1&t=QxwnchLgh4wUQq5P-1
