@@ -4,11 +4,7 @@ import React from "react";
 import { TabBarIcon } from "@/components/navigation/TabBarIcon";
 import { CartTabBarIcon } from "@/components/navigation/CartTabBarIcon";
 import { Colors } from "@/constants/Colors";
-import { useColorScheme } from "@/hooks/useColorScheme";
-import { CartProvider } from "@/context/CartContext";
-
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
 
   return (
     // <CartProvider>
