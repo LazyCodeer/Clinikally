@@ -191,3 +191,7 @@ Contains pincode delivery data, with each entry including:
 1. **CSVJSON:** Used to convert CSV files to JSON format.
 2. **Freepik:** Used demo images from this resource.
 3. **Figma:** https://www.figma.com/design/76EEh5cwQkzPSDAxp6vQg4/Clinikally?node-id=0-1&t=QxwnchLgh4wUQq5P-1
+
+# How to run
+scan below qr code to run this app
+![alt text](image.png)
