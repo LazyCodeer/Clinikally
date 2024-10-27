@@ -206,7 +206,7 @@ Here are the steps to set up and run the Expo app "Clinikally Done" on your devi
 
 2. **Access the Project:**
    - You can view the project hosted on Expo using the link below:
-     - [Clinikally Done Project](https://expo.dev/preview/update?message=Republish%20%22clinikally%20done%22%20-%20group%3A%202193fb3f-e35d-4ebf-96b2-7b2c4ccb1420&updateRuntimeVersion=1.0.0&createdAt=2024-10-27T10%3A15%3A34.919Z&slug=exp&projectId=37e1b7ff-6b57-4931-8f05-61ebb8fb21bf&group=80fa4ec3-bf40-4f3a-8130-dfbaa9a8cfbe)
+     - [Clinikally Done Project](https://expo.dev/preview/update?message=clinikally&updateRuntimeVersion=1.0.0&createdAt=2024-10-27T10%3A27%3A52.675Z&slug=exp&projectId=37e1b7ff-6b57-4931-8f05-61ebb8fb21bf&group=8719a58f-1e27-417b-b845-23ee9d6ead50)
 
 ## Steps to Run the App
 
