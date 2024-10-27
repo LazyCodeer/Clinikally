@@ -8,16 +8,21 @@ import {
   TouchableOpacity,
   FlatList,
   ToastAndroid,
+  Alert,
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import Container from "@/components/Container";
 import { useCart } from "@/context/CartContext";
 import { useTypography } from "@/constants/Typography";
+import { useRouter } from "expo-router";
 
 const CartScreen = () => {
   const { cartItems, updateQuantity, removeFromCart } = useCart();
   const [couponCode, setCouponCode] = useState("");
+  const [discount, setDiscount] = useState(0); // State to manage discount
+
+  const router = useRouter();
 
   // Calculate subtotal
   const subtotal = cartItems.reduce(
@@ -25,14 +30,42 @@ const CartScreen = () => {
     0
   );
 
+  const isFreeDelivery = subtotal >= 499;
+  const hasOutOfStockItems = cartItems.some((item) => !item.inStock);
+
   const typography = useTypography();
   if (!typography) {
     return null;
   }
 
-  const deliveryCharge = 80;
-  const promotionApplied = 80;
-  const orderTotal = subtotal + deliveryCharge - promotionApplied;
+  const deliveryCharge = isFreeDelivery ? 0 : 80;
+
+  const orderTotal = isFreeDelivery
+    ? subtotal - discount
+    : subtotal + deliveryCharge - discount;
+
+  const handleProceedToBuy = () => {
+    if (hasOutOfStockItems) {
+      Alert.alert(
+        "Out of Stock Items",
+        "Please remove out-of-stock items before proceeding to checkout."
+      );
+    }
+  };
+
+  const handleApplyCoupon = () => {
+    if (couponCode.trim().toUpperCase() === "CLINIKALLY") {
+      const discountAmount = subtotal * 0.1; // 10% discount
+      setDiscount(discountAmount);
+      ToastAndroid.show(
+        "Coupon applied! 10% discount added.",
+        ToastAndroid.SHORT
+      );
+    } else {
+      setDiscount(0);
+      ToastAndroid.show("Invalid coupon code.", ToastAndroid.SHORT);
+    }
+  };
 
   interface CartItem {
     id: string;
@@ -53,9 +86,11 @@ const CartScreen = () => {
           <Text style={styles.price}>₹{item.price}</Text>
           <Text style={styles.originalPrice}>M.R.P: ₹{item.originalPrice}</Text>
         </View>
-        <Text style={styles.inStock}>
-          {item.inStock ? "In Stock" : "Out of Stock"}
-        </Text>
+        {item.inStock ? (
+          <Text style={styles.inStock}>In Stock</Text>
+        ) : (
+          <Text style={styles.outStock}>Out of Stock</Text>
+        )}
       </View>
       <View style={styles.quantityContainer}>
         {item.quantity === 1 ? (
@@ -86,11 +121,25 @@ const CartScreen = () => {
 
   return (
     <Container>
+      <Text style={typography.header1}>Cart</Text>
       {cartItems.length === 0 ? (
-        <Text style={styles.emptyCartMessage}>Your cart is empty</Text>
+        <View style={styles.emptyCartContainer}>
+          <Image
+            source={require("../../assets/images/not-found.png")}
+            style={styles.emptyCartImage}
+          />
+          <Text style={styles.emptyCartMessage}>Your cart is empty</Text>
+          <TouchableOpacity
+            style={styles.searchButton}
+            onPress={() => {
+              router.push({ pathname: "/search" });
+            }}
+          >
+            <Text style={styles.searchButtonText}>Find Product</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <>
-          <Text style={typography.header2}>Cart</Text>
           <View
             style={{
               flexDirection: "row",
@@ -102,7 +151,16 @@ const CartScreen = () => {
             <Text style={typography.subHeading1}>₹{subtotal.toFixed(2)}</Text>
           </View>
 
-          <TouchableOpacity style={styles.proceedButton}>
+          <Text style={styles.deliveryMessage}>
+            {isFreeDelivery
+              ? "Congratulations! You are eligible for free delivery."
+              : `Add ₹${Math.ceil(499 - subtotal)} more to get free delivery.`}
+          </Text>
+
+          <TouchableOpacity
+            style={styles.proceedButton}
+            onPress={handleProceedToBuy}
+          >
             <Text style={styles.proceedButtonText}>
               Proceed to Buy ({cartItems.length} items)
             </Text>
@@ -117,27 +175,30 @@ const CartScreen = () => {
           />
 
           {/* Coupon Code */}
-          <View style={styles.couponContainer}>
-            <Icon
-              name="card-giftcard"
-              size={20}
-              color="#333"
-              style={styles.couponIcon}
-            />
-            <TextInput
-              placeholder="Coupon Code"
-              style={styles.couponInput}
-              value={couponCode}
-              onChangeText={(text) => setCouponCode(text)}
-            />
-            <TouchableOpacity style={styles.applyButton}>
+          <View style={{ flexDirection: "row" }}>
+            <View style={styles.couponContainer}>
+              <Icon
+                name="card-giftcard"
+                size={20}
+                color="#333"
+                style={styles.couponIcon}
+              />
+              <TextInput
+                placeholder="Coupon Code"
+                style={styles.couponInput}
+                value={couponCode}
+                onChangeText={(text) => setCouponCode(text)}
+              />
+            </View>
+            <TouchableOpacity
+              style={styles.applyButton}
+              onPress={handleApplyCoupon}
+            >
               <Text style={styles.applyButtonText}>Apply</Text>
             </TouchableOpacity>
           </View>
 
           {/* Order Summary */}
-          {/* add a dashed line */}
-
           <View style={styles.summary}>
             <View style={styles.rowStyle}>
               <Text style={styles.summaryRow}>Items: </Text>
@@ -149,19 +210,12 @@ const CartScreen = () => {
                 ₹{deliveryCharge.toFixed(2)}
               </Text>
             </View>
-
-            <View style={styles.rowStyle}>
-              <Text style={styles.summaryRow}>Total: </Text>
-              <Text style={styles.priceDetail}>
-                ₹{(subtotal + deliveryCharge).toFixed(2)}
-              </Text>
-            </View>
-            <View style={styles.rowStyle}>
-              <Text style={styles.summaryRow}>Promotion Applied: </Text>
-              <Text style={styles.discountDetail}>
-                -₹{promotionApplied.toFixed(2)}
-              </Text>
-            </View>
+            {discount > 0 && (
+              <View style={styles.rowStyle}>
+                <Text style={styles.summaryRow}>Discount: </Text>
+                <Text style={styles.priceDetail}>-₹{discount.toFixed(2)}</Text>
+              </View>
+            )}
             <View
               style={{
                 borderBottomWidth: 1,
@@ -170,18 +224,26 @@ const CartScreen = () => {
                 marginVertical: 10,
               }}
             />
-            <View
-              style={[
-                {
-                  marginTop: 5,
-                },
-                styles.rowStyle,
-              ]}
-            >
+            <View style={[{ marginTop: 5 }, styles.rowStyle]}>
               <Text style={styles.orderTotal}>Order Total:</Text>
               <Text style={styles.orderTotal}>₹{orderTotal.toFixed(2)}</Text>
             </View>
           </View>
+          {cartItems.length > 7 && (
+            <TouchableOpacity
+              style={styles.proceedButton}
+              onPress={handleProceedToBuy}
+            >
+              <Text style={styles.proceedButtonText}>
+                Proceed to Buy ({cartItems.length} items)
+              </Text>
+            </TouchableOpacity>
+          )}
+          {hasOutOfStockItems && (
+            <Text style={styles.warningMessage}>
+              Please remove out-of-stock items to checkout
+            </Text>
+          )}
         </>
       )}
     </Container>
@@ -193,6 +255,41 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: "#fff",
+  },
+  emptyCartContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  emptyCartImage: {
+    width: 200,
+    height: 150,
+    marginBottom: 20,
+    marginTop: 20,
+  },
+  emptyCartMessage: {
+    fontSize: 18,
+    marginBottom: 20,
+    textAlign: "center",
+    color: Colors.textSecondary,
+  },
+  searchButton: {
+    backgroundColor: Colors.buttonBg,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  searchButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  deliveryMessage: {
+    color: "#555",
+    fontSize: 14,
+    marginTop: 5,
+    fontWeight: "500",
   },
   rowStyle: {
     flexDirection: "row",
@@ -214,6 +311,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
     marginBottom: 10,
+  },
+  warningMessage: {
+    color: "tomato",
+    fontSize: 14,
+    fontWeight: "500",
+    marginVertical: 8,
   },
   proceedButtonText: {
     color: "#fff",
@@ -264,6 +367,11 @@ const styles = StyleSheet.create({
     color: "green",
     marginTop: 4,
   },
+  outStock: {
+    fontSize: 12,
+    color: "red",
+    marginTop: 4,
+  },
   quantityContainer: {
     justifyContent: "center",
     alignItems: "center",
@@ -280,14 +388,16 @@ const styles = StyleSheet.create({
   },
   couponContainer: {
     flexDirection: "row",
+    flex: 1,
     alignItems: "center",
-    padding: 10,
+    padding: 8,
     borderRadius: 8,
     backgroundColor: "#f2f2f2",
-    marginTop: 10,
+    height: 45,
+    marginRight: 10,
   },
   couponIcon: {
-    marginRight: 8,
+    marginRight: 5,
   },
   couponInput: {
     flex: 1,
@@ -298,13 +408,15 @@ const styles = StyleSheet.create({
   applyButton: {
     backgroundColor: Colors.buttonBg,
     borderRadius: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginLeft: 8,
+    height: 45,
+    width: 90,
+    alignContent: "center",
+    justifyContent: "center",
   },
   applyButtonText: {
     color: "#fff",
     fontWeight: "bold",
+    textAlign: "center",
   },
   summary: {
     marginTop: 20,
@@ -323,7 +435,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 14,
     color: Colors.textSecondary,
-    // flex: 1,
   },
   discountDetail: {
     color: "#FF6347",
@@ -333,11 +444,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     textAlign: "center",
-  },
-  emptyCartMessage: {
-    fontSize: 18,
-    textAlign: "center",
-    marginTop: 20,
   },
 });
 

@@ -12,7 +12,7 @@ interface CartItem {
 
 interface CartContextProps {
   cartItems: CartItem[];
-  addToCart: (item: CartItem) => void;
+  addToCart: (item: any) => void;
   updateQuantity: (id: string, quantity: number) => void;
   removeFromCart: (id: string) => void;
   getTotalItems: () => number;
@@ -21,26 +21,33 @@ interface CartContextProps {
 const CartContext = createContext<CartContextProps | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
+
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
-  const addToCart = (item: CartItem) => {
-    console.log("Adding to cart", item);
+  const addToCart = (item: any) => {
+    const newItem: CartItem = {
+      id: item.id.toString(),
+      name: item.name,
+      price: item.discountPrice,
+      originalPrice: item.originalPrice,
+      inStock: item.inStock,
+      quantity: 1,
+      imageUrl: item.image,
+    };
+
     setCartItems((prevItems) => {
       const existingItem = prevItems.find(
-        (cartItem) => cartItem.id === item.id
+        (cartItem) => cartItem.id === newItem.id
       );
       if (existingItem) {
         const updatedItems = prevItems.map((cartItem) =>
-          cartItem.id === item.id
+          cartItem.id === newItem.id
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
-        console.log("Updated cart items", updatedItems);
         return updatedItems;
       } else {
-        const newItems = [...prevItems, { ...item, quantity: 1 }];
-        console.log("New cart items", newItems);
-        return newItems;
+        return [...prevItems, newItem];
       }
     });
   };

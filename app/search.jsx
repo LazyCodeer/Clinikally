@@ -8,32 +8,36 @@ import {
   Platform,
   StatusBar,
   ToastAndroid,
-  Text,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import debounce from "lodash.debounce"; // Add lodash.debounce for debouncing the input
+import debounce from "lodash.debounce";
 import products from "../assets/data/products.json";
 import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
-import Icon from "react-native-vector-icons/FontAwesome";
+import Feather from "react-native-vector-icons/Feather"; 
 import { Colors } from "@/constants/Colors";
+
+const PAGE_SIZE = 10; // Number of products to load per batch
+
+const MemoizedProductCard = React.memo(ProductCard);
 
 const SearchScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { addToCart } = useCart();
   const [query, setQuery] = useState(route.params?.query || "");
-
-  // Memoize filtered products to avoid recalculating on each render
-  const filteredProducts = useMemo(
-    () =>
-      products.filter((product) =>
-        product.name.toLowerCase().includes(query.toLowerCase())
-      ),
-    [query]
-  );
+  const [currentPage, setCurrentPage] = useState(1);
 
   const paddingTop = Platform.OS === "android" ? StatusBar.currentHeight : 0;
+
+  // Filter and paginate products
+  const filteredProducts = useMemo(() => {
+    const filtered = products.filter((product) =>
+      product.name.toLowerCase().includes(query.toLowerCase())
+    );
+    return filtered.slice(0, currentPage * PAGE_SIZE);
+  }, [query, currentPage]);
 
   const handleBack = useCallback(() => {
     navigation.goBack();
@@ -42,44 +46,51 @@ const SearchScreen = () => {
   const handleAddToCart = useCallback(
     (item) => {
       addToCart(item);
-      ToastAndroid.show("Product added to cart", ToastAndroid.SHORT);
+      if (Platform.OS === "android") {
+        ToastAndroid.show("Product added to cart", ToastAndroid.SHORT);
+      }
     },
     [addToCart]
   );
 
-  // Debounce setQuery to avoid excessive re-renders during typing
-  const handleSearchInput = debounce((text) => setQuery(text), 300);
+  // Debounce the search input to reduce excessive renders
+  const handleSearchInput = useCallback(
+    debounce((text) => {
+      setQuery(text);
+      setCurrentPage(1); // Reset page when query changes
+    }, 300),
+    []
+  );
+
+  const loadMoreProducts = useCallback(() => {
+    setCurrentPage((prevPage) => prevPage + 1);
+  }, []);
 
   return (
     <View style={[styles.container, { paddingTop }]}>
       {/* Search bar container */}
       <View style={styles.searchContainer}>
         <TouchableOpacity
-          style={styles.searchButtonWrapper}
+          style={styles.backButtonWrapper}
           onPress={handleBack}
         >
-          <Icon name="chevron-left" size={20} style={styles.iconStyle} />
+          <Feather name="arrow-left" size={20} style={styles.iconStyle} />
         </TouchableOpacity>
         <View style={styles.searchBarWrapper}>
           <TextInput
             style={styles.searchInput}
             placeholder="Search for a product..."
             defaultValue={query}
-            onChangeText={handleSearchInput} // Debounced text input
+            onChangeText={handleSearchInput}
           />
         </View>
       </View>
 
       {/* Product list */}
-      {filteredProducts.length === 0 && (
-        <Text>
-          No products found for "{query}". Try searching for something else.
-        </Text>
-      )}
       <FlatList
         data={filteredProducts}
         renderItem={({ item }) => (
-          <ProductCard
+          <MemoizedProductCard
             product={item}
             onAddToCart={() =>
               handleAddToCart({ ...item, inStock: true, quantity: 1 })
@@ -90,9 +101,19 @@ const SearchScreen = () => {
         numColumns={2}
         columnWrapperStyle={{ justifyContent: "space-between" }}
         showsVerticalScrollIndicator={false}
-        initialNumToRender={10} // Render limited items initially
-        windowSize={5} // Use optimized window size
-        removeClippedSubviews // Remove items that are off-screen
+        onEndReachedThreshold={0.5}
+        onEndReached={loadMoreProducts} // Load more when end is reached
+        updateCellsBatchingPeriod={50} // Reduce rendering batch time
+        ListFooterComponent={
+          <ActivityIndicator
+            size="small"
+            color={Colors.primary}
+            style={{ marginVertical: 10 }}
+          />
+        }
+        initialNumToRender={10} // Render fewer items initially
+        maxToRenderPerBatch={10}
+        windowSize={10}
       />
     </View>
   );
@@ -114,13 +135,13 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 10,
   },
-  searchButtonWrapper: {
-    width: 40,
-    height: 40,
+  backButtonWrapper: {
+    width: 35,
+    height: 35,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 50,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: Colors.textSecondary,
   },
   searchInput: {

@@ -12,10 +12,12 @@ import {
   Platform,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import moment from "moment"; // Import moment for date manipulation
-import pincodesData from "../assets/data/pincodes.json"; // Import your JSON data
+import moment from "moment";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import pincodesData from "../assets/data/pincodes.json";
 import { Colors } from "@/constants/Colors";
-import Icon from "react-native-vector-icons/FontAwesome";
+import Feather from "react-native-vector-icons/Feather";
+import { useTypography } from "@/constants/Typography";
 
 export default function ProductDetailScreen() {
   const route = useRoute();
@@ -23,13 +25,46 @@ export default function ProductDetailScreen() {
   const productData = JSON.parse(product);
   const { width } = useWindowDimensions();
   const navigation = useNavigation();
+  const typography = useTypography();
 
   const [pincode, setPincode] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
-  const [timer, setTimer] = useState(null);
   const [countdown, setCountdown] = useState(null);
 
-  // Function to get logistics provider and TAT based on pincode
+  // Load typography and provide fallback if necessary
+  const typographyAvailable = typography !== null; // Check if typography is available
+
+  useEffect(() => {
+    loadPincode();
+    loadCountdown();
+  }, []);
+
+  useEffect(() => {
+    const timerId = setInterval(() => {
+      if (countdown && countdown > 0) {
+        setCountdown((prev) => prev - 1);
+        AsyncStorage.setItem("countdown", JSON.stringify(countdown - 1));
+      }
+    }, 1000);
+
+    return () => clearInterval(timerId);
+  }, [countdown]);
+
+  const loadCountdown = async () => {
+    const storedCountdown = await AsyncStorage.getItem("countdown");
+    if (storedCountdown) {
+      setCountdown(JSON.parse(storedCountdown));
+    }
+  };
+
+  const loadPincode = async () => {
+    const storedPincode = await AsyncStorage.getItem("pincode");
+    if (storedPincode) {
+      setPincode(storedPincode);
+      handlePincodeValidation(storedPincode); // Automatically validate pincode if available
+    }
+  };
+
   const getProviderAndTatByPincode = (pincode) => {
     const pincodeInfo = pincodesData.find(
       (item) => item.pincode === parseInt(pincode)
@@ -39,21 +74,22 @@ export default function ProductDetailScreen() {
       : null;
   };
 
-  const handlePincodeValidation = () => {
-    if (pincode.length !== 6) {
+  const handlePincodeValidation = async (pincodeToValidate) => {
+    const pincodeToUse = pincodeToValidate || pincode;
+
+    if (pincodeToUse.length !== 6) {
       Alert.alert("Invalid Pincode", "Please enter a valid 6-digit pincode.");
       return;
     }
 
-    const providerInfo = getProviderAndTatByPincode(pincode);
-
+    const providerInfo = getProviderAndTatByPincode(pincodeToUse);
     if (!providerInfo) {
-      Alert.alert(
-        "Invalid Pincode",
-        "No logistics provider found for this pincode."
-      );
+      Alert.alert("Invalid Pincode", "No logistics provider found.");
       return;
     }
+
+    // Store the pincode in AsyncStorage
+    await AsyncStorage.setItem("pincode", pincodeToUse);
 
     const { provider, tat } = providerInfo;
     calculateDeliveryDate(provider, tat);
@@ -61,59 +97,34 @@ export default function ProductDetailScreen() {
 
   const calculateDeliveryDate = (provider, tat) => {
     const currentHour = moment().hour();
-
     if (provider === "Provider A") {
       if (currentHour < 17 && productData.inStock) {
         setDeliveryDate("Today (Same-day Delivery)");
         startCountdown("17:00");
       } else {
-        setDeliveryDate(
-          `Estimated Delivery: ${moment()
-            .add(1, "days")
-            .format("dddd, MMMM Do")}`
-        );
+        setDeliveryDate(`${moment().add(1, "days").format("dddd, MMMM Do")}`);
       }
     } else if (provider === "Provider B") {
       if (currentHour < 9) {
         setDeliveryDate("Today (Same-day Delivery)");
         startCountdown("09:00");
       } else {
-        setDeliveryDate(
-          `Estimated Delivery: ${moment()
-            .add(1, "days")
-            .format("dddd, MMMM Do")}`
-        );
+        setDeliveryDate(`${moment().add(1, "days").format("dddd, MMMM Do")}`);
       }
     } else {
       const estimatedDate = moment().add(tat, "days").format("dddd, MMMM Do");
-      setDeliveryDate(`Estimated Delivery: ${estimatedDate}`);
+      setDeliveryDate(`${estimatedDate}`);
     }
   };
 
   const startCountdown = (cutoffTime) => {
     const cutoff = moment(cutoffTime, "HH:mm");
     const remainingTime = cutoff.diff(moment(), "seconds");
-
     if (remainingTime > 0) {
       setCountdown(remainingTime);
-      const timerId = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerId);
-            return null;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      setTimer(timerId);
+      AsyncStorage.setItem("countdown", JSON.stringify(remainingTime));
     }
   };
-
-  useEffect(() => {
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [timer]);
 
   const formatCountdown = (seconds) => {
     const hrs = Math.floor(seconds / 3600);
@@ -129,16 +140,35 @@ export default function ProductDetailScreen() {
   const paddingTop = Platform.OS === "android" ? StatusBar.currentHeight : 0;
 
   return (
-    <View style={[styles.container, { paddingTop: paddingTop, marginTop: 10 }]}>
+    <View style={[styles.container, { paddingTop: paddingTop }]}>
       <TouchableOpacity style={styles.backIconWrapper} onPress={handleBack}>
-        <Icon name="chevron-left" size={20} style={styles.iconStyle} />
+        <Feather name="arrow-left" size={20} style={styles.iconStyle} />
       </TouchableOpacity>
       <Image source={{ uri: productData.image }} style={styles.image} />
-      <Text style={styles.title}>{productData.name}</Text>
+      <Text
+        style={[
+          styles.title,
+          typographyAvailable ? typography.header1 : { fontSize: 20 },
+        ]}
+      >
+        {productData.name}
+      </Text>
       <View style={styles.priceContainer}>
-        <Text style={styles.price}>₹{productData.originalPrice}</Text>
+        <Text
+          style={[
+            styles.price,
+            typographyAvailable ? typography.subHeading1 : { fontSize: 18 },
+          ]}
+        >
+          ₹{productData.originalPrice}
+        </Text>
         <Text style={styles.originalPrice}>₹{productData.discountPrice}</Text>
-        <Text style={styles.discount}>
+        <Text
+          style={[
+            styles.discount,
+            typographyAvailable ? typography.bodyText : { fontSize: 14 },
+          ]}
+        >
           (
           {(
             ((productData.originalPrice - productData.discountPrice) /
@@ -152,13 +182,20 @@ export default function ProductDetailScreen() {
         style={[
           styles.inStock,
           { color: productData.inStock ? Colors.buttonBg : "red" },
+          typographyAvailable ? typography.subHeading2 : { fontSize: 20 },
         ]}
       >
         {productData.inStock ? "In Stock" : "Out of Stock"}
       </Text>
-
-      {/* Pincode input field and apply button */}
-      <View style={{ flexDirection: "row", marginTop: 10 }}>
+      <Text
+        style={[
+          styles.promptText,
+          typographyAvailable ? typography.subHeading1 : { fontSize: 16 },
+        ]}
+      >
+        Enter pincode:
+      </Text>
+      <View style={styles.pincodeContainer}>
         <TextInput
           style={styles.pincodeInput}
           placeholder="Enter Pincode"
@@ -169,128 +206,120 @@ export default function ProductDetailScreen() {
         />
         <TouchableOpacity
           style={styles.applyButton}
-          onPress={handlePincodeValidation}
+          onPress={() => handlePincodeValidation()}
         >
           <Text style={styles.applyButtonText}>Apply</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Delivery Date Display */}
       {deliveryDate ? (
-        <Text style={styles.deliveryDate}>{deliveryDate}</Text>
+        <View
+          style={{
+            marginTop: 15,
+          }}
+        >
+          <Text
+            style={[
+              {
+                color: Colors.text,
+              },
+              typographyAvailable ? typography.subHeading1 : { fontSize: 16 },
+            ]}
+          >
+            Estimate Delivery
+          </Text>
+          <Text
+            style={[
+              styles.deliveryDate,
+              typographyAvailable ? typography.bodyText : { fontSize: 16 },
+            ]}
+          >
+            {deliveryDate}
+          </Text>
+        </View>
       ) : null}
-
-      {/* Countdown Timer for Same-day Delivery */}
-      {countdown !== null && (
-        <Text style={styles.countdown}>
-          Time left for same-day delivery: {formatCountdown(countdown)}
-        </Text>
+      {countdown !== null && countdown > 0 && (
+        <View
+          style={{
+            marginTop: 10,
+          }}
+        >
+          <Text
+            style={[
+              {
+                color: Colors.text,
+              },
+              typographyAvailable ? typography.subHeading1 : { fontSize: 16 },
+            ]}
+          >
+            Time left for same-day delivery
+          </Text>
+          <Text
+            style={[
+              styles.countdown,
+              typographyAvailable ? typography.bodyText : { fontSize: 16 },
+            ]}
+          >
+            {formatCountdown(countdown)}
+          </Text>
+        </View>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: "#fff",
-    // alignItems: "center",
-  },
+  container: { flex: 1, padding: 16, backgroundColor: "#fff" },
   backIconWrapper: {
     width: 40,
     height: 40,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 50,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: Colors.textSecondary,
     marginTop: 15,
     marginBottom: 15,
   },
-  iconStyle: {
-    color: Colors.textSecondary,
-    marginLeft: -5,
-  },
-
-  image: {
-    width: "100%",
-    height: 200,
-    resizeMode: "cover",
-    borderRadius: 10,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginTop: 10,
-    // textAlign: "center",
-  },
-  description: {
-    fontSize: 16,
-    color: "#555",
-    marginTop: 10,
-    textAlign: "center",
-  },
-  priceContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 10,
-  },
-  price: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: Colors.primary,
-  },
+  iconStyle: { color: Colors.textSecondary },
+  image: { width: "100%", height: 200, resizeMode: "cover", borderRadius: 10 },
+  title: { marginTop: 10 },
+  priceContainer: { flexDirection: "row", alignItems: "center", marginTop: 10 },
+  price: { fontSize: 18, fontWeight: "bold", color: Colors.primary },
   originalPrice: {
     fontSize: 14,
     textDecorationLine: "line-through",
     marginLeft: 8,
     color: "#999",
   },
-  discount: {
-    fontSize: 14,
-    color: "#FF6347",
-    // marginTop: 4,
-    marginLeft: 8,
-  },
-  inStock: {
-    fontSize: 20,
-    fontWeight: "500",
-    marginTop: 5,
-  },
+  discount: { color: "#FF6347", marginLeft: 8 },
+  inStock: { fontSize: 20, fontWeight: "500", marginTop: 5 },
+  promptText: { marginTop: 15 },
+  pincodeContainer: { flexDirection: "row", marginTop: 10 },
   pincodeInput: {
     height: 45,
     borderColor: Colors.textSecondary,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 10,
-    // marginTop: 15,
     marginRight: 10,
     width: "80%",
   },
   applyButton: {
     backgroundColor: Colors.buttonBg,
-    // paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
-    // marginTop: 10,
     height: 45,
     justifyContent: "center",
-    alignContent: "center",
+    alignItems: "center",
   },
-  applyButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
+  applyButtonText: { color: "#fff", fontWeight: "600" },
+  pincodeDisplay: { marginTop: 10, fontSize: 16, color: "#333" },
   deliveryDate: {
+    // marginTop: 10,
     fontSize: 16,
-    color: "#333",
-    marginTop: 15,
-    fontWeight: "500",
+    color: Colors.textSecondary,
+    fontWeight: "400",
   },
-  countdown: {
-    fontSize: 14,
-    color: "#FF6347",
-    marginTop: 5,
-  },
+  countdown: { fontSize: 16, color: Colors.buttonBg, fontWeight: "500" },
 });
