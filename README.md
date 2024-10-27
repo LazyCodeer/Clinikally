@@ -188,10 +188,45 @@ Contains pincode delivery data, with each entry including:
    ```
 
 # Tools used
+
 1. **CSVJSON:** Used to convert CSV files to JSON format.
 2. **Freepik:** Used demo images from this resource.
 3. **Figma:** https://www.figma.com/design/76EEh5cwQkzPSDAxp6vQg4/Clinikally?node-id=0-1&t=QxwnchLgh4wUQq5P-1
 
-# How to run
-scan below qr code to run this app
-![alt text](image.png)
+# Instructions to Run the Expo App "Clinikally"
+
+Here are the steps to set up and run the Expo app "Clinikally Done" on your device.
+
+## Prerequisites
+
+1. **Install Expo Go:**
+
+   - First, download and install the Expo Go app from the Google Play Store:
+     - [Expo Go on Google Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent&pcampaignid=web_share)
+
+2. **Access the Project:**
+   - You can view the project hosted on Expo using the link below:
+     - [Clinikally Done Project](https://expo.dev/preview/update?message=Republish%20%22clinikally%20done%22%20-%20group%3A%202193fb3f-e35d-4ebf-96b2-7b2c4ccb1420&updateRuntimeVersion=1.0.0&createdAt=2024-10-27T10%3A15%3A34.919Z&slug=exp&projectId=37e1b7ff-6b57-4931-8f05-61ebb8fb21bf&group=80fa4ec3-bf40-4f3a-8130-dfbaa9a8cfbe)
+
+## Steps to Run the App
+
+1. **Open Expo Go:**
+
+   - Launch the Expo Go app on your mobile device.
+
+2. **Scan the QR Code:**
+
+   - In the Expo Go app, tap on "Scan QR Code." You might need to allow the app to access your camera..
+
+3. **Wait for Loading:**
+   - The app should load, and you’ll be able to start using "Clinikally Done."
+
+## Additional Notes
+
+- Ensure your device is connected to the internet to access the project.
+- If you run into any issues, please make sure that your Expo Go app is updated, and try restarting the app.
+
+Let me know if you need any further assistance!
+
+Best Regards,
+**Sagar Kumar**
